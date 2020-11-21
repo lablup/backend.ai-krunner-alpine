@@ -98,8 +98,8 @@ RUN cd ${PREFIX}/bin \
 	&& ln -s python3-config python-config
 
 # if this is called "PIP_VERSION", pip explodes with "ValueError: invalid truth value '<VERSION>'"
-ENV PYTHON_PIP_VERSION 20.1.1
-ENV PYTHON_SETUPTOOLS_VERSION 49.2.0
+ENV PYTHON_PIP_VERSION 20.2.4
+ENV PYTHON_SETUPTOOLS_VERSION 50.3.2
 
 RUN set -ex; \
 	\
@@ -120,6 +120,9 @@ RUN set -ex; \
 			\( -type f -a \( -name '*.pyc' -o -name '*.pyo' \) \) \
 		\) -exec rm -rf '{}' +; \
 	rm -f get-pip.py
+
+RUN mkdir -p ${PREFIX}/licenses \
+    && wget -O ${PREFIX}/licenses/LICENSE.cpython.txt "https://github.com/python/cpython/raw/3.8/LICENSE"
 
 CMD ["python3"]
 
