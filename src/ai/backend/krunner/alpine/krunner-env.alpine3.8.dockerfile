@@ -17,6 +17,7 @@ RUN PYVER_MM="$(echo $PYTHON_VERSION | cut -d. -f1).$(echo $PYTHON_VERSION | cut
     mkdir -p ${PREFIX}/lib/python${PYVER_MM}/site-packages/ai/backend/helpers
 
 COPY ttyd_linux.x86_64.bin ${PREFIX}/bin/ttyd
+COPY licenses/* ${PREFIX}/licenses/wheels/
 RUN chmod +x ${PREFIX}/bin/ttyd
 
 # Build the image archive
