@@ -7,8 +7,8 @@ ENV LANG=C.UTF-8
 
 RUN apk add --no-cache ca-certificates
 
-ENV GPG_KEY E3FF2839C048B25C084DEBE9B26995E310250568
-ENV PYTHON_VERSION 3.8.6
+ENV GPG_KEY A035C8C19219BA821ECEA86B64E628F8D684696D
+ENV PYTHON_VERSION 3.10.8
 
 RUN mkdir -p ${PREFIX}
 ENV LD_LIBRARY_PATH ${PREFIX}/lib
@@ -18,11 +18,13 @@ RUN set -ex \
 		gnupg \
 		tar \
 		xz \
+		ca-certificates \
+		tzdata \
 	\
 	&& wget -O python.tar.xz "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz" \
 	&& wget -O python.tar.xz.asc "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz.asc" \
 	&& export GNUPGHOME="$(mktemp -d)" \
-	&& gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys "$GPG_KEY" \
+	&& gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$GPG_KEY" \
 	&& gpg --batch --verify python.tar.xz.asc python.tar.xz \
 	&& { command -v gpgconf > /dev/null && gpgconf --kill all || :; } \
 	&& rm -rf "$GNUPGHOME" python.tar.xz.asc \
@@ -41,11 +43,11 @@ RUN set -ex \
 		libc-dev \
 		libffi-dev \
 		libnsl-dev \
-		libressl-dev \
 		libtirpc-dev \
 		linux-headers \
 		make \
 		ncurses-dev \
+		openssl-dev \
 		pax-utils \
 		readline-dev \
 		sqlite-dev \
@@ -98,8 +100,8 @@ RUN cd ${PREFIX}/bin \
 	&& ln -s python3-config python-config
 
 # if this is called "PIP_VERSION", pip explodes with "ValueError: invalid truth value '<VERSION>'"
-ENV PYTHON_PIP_VERSION 20.2.4
-ENV PYTHON_SETUPTOOLS_VERSION 50.3.2
+ENV PYTHON_PIP_VERSION 22.3.1
+ENV PYTHON_SETUPTOOLS_VERSION 65.5.1
 
 RUN set -ex; \
 	\
