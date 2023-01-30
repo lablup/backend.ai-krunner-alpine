@@ -76,7 +76,7 @@ jobs:
         sed -i 's/ARCH/${{ matrix.arch }}/g' MANIFEST.in
         docker run --rm -v ${{ github.workspace }}:/ws:rw --workdir=/ws ${{ env.img }} \
           ${{ env.py }} setup.py bdist_wheel
-        PKGVER=$(python -c 'from ai.backend.krunner.static_gnu import __version__; print(__version__, end="")')
+        PKGVER=$(python -c 'from ai.backend.krunner.alpine import __version__; print(__version__, end="")')
         MUSL_PTAG=musllinux_1_1_${{ matrix.arch }}
         case "${{ matrix.arch }}" in
         "aarch64")
@@ -84,8 +84,8 @@ jobs:
         *)
           MACOS_PTAG=macosx_11_0_${{ matrix.arch }} ;;
         esac
-        sudo mv dist/backend.ai_krunner_static_gnu-${PKGVER}-*.whl \
-                dist/backend.ai_krunner_static_gnu-${PKGVER}-py3-none-${MUSL_PTAG}.${MACOS_PTAG}.whl
+        sudo mv dist/backend.ai_krunner_alpine-${PKGVER}-*.whl \
+                dist/backend.ai_krunner_alpine-${PKGVER}-py3-none-${MUSL_PTAG}.${MACOS_PTAG}.whl
         ls -lh dist
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
