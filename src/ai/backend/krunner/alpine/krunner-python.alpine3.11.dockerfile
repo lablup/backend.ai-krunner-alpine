@@ -8,7 +8,7 @@ ENV LANG=C.UTF-8
 RUN apk add --no-cache ca-certificates
 
 ENV GPG_KEY A035C8C19219BA821ECEA86B64E628F8D684696D
-ENV PYTHON_VERSION 3.10.8
+ENV PYTHON_VERSION 3.11.1
 
 RUN mkdir -p ${PREFIX}
 ENV LD_LIBRARY_PATH ${PREFIX}/lib
@@ -33,8 +33,8 @@ RUN set -ex \
 	&& rm python.tar.xz \
 	\
 	&& apk add --no-cache --virtual .build-deps  \
+		bluez-dev \
 		bzip2-dev \
-		coreutils \
 		dpkg-dev dpkg \
 		expat-dev \
 		findutils \
@@ -48,12 +48,14 @@ RUN set -ex \
 		make \
 		ncurses-dev \
 		openssl-dev \
+		patchelf \
 		pax-utils \
 		readline-dev \
 		sqlite-dev \
 		tcl-dev \
 		tk \
 		tk-dev \
+		util-linux-dev \
 		xz-dev \
 		zlib-dev \
 # add build deps before removing fetch deps in case there's overlap
@@ -61,36 +63,51 @@ RUN set -ex \
 	\
 	&& cd /usr/src/python \
 	&& gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" \
-	&& ./configure \
-		--prefix="${PREFIX}" \
+	./configure \
 		--build="$gnuArch" \
 		--enable-loadable-sqlite-extensions \
+		--enable-optimizations \
+		--enable-option-checking=fatal \
 		--enable-shared \
+		--with-lto \
 		--with-system-expat \
-		--with-system-ffi \
 		--without-ensurepip \
-	&& make -j "$(nproc)" \
+	; \
+	nproc="$(nproc)"; \
+	make -j "$nproc" \
 # set thread stack size to 1MB so we don't segfault before we hit sys.getrecursionlimit()
 # https://github.com/alpinelinux/aports/commit/2026e1259422d4e0cf92391ca2d3844356c649d0
 		EXTRA_CFLAGS="-DTHREAD_STACK_SIZE=0x100000" \
-	&& make install \
+		LDFLAGS="-Wl,--strip-all" \
+	; \
+	make install; \
 	\
-	&& find ${PREFIX} -type f -executable -not \( -name '*tkinter*' \) -exec scanelf --needed --nobanner --format '%n#p' '{}' ';' \
+# https://github.com/docker-library/python/issues/784
+# prevent accidental usage of a system installed libpython of the same version
+	bin="$(readlink -vf ${PREFIX}/bin/python3)"; \
+	patchelf --set-rpath '$ORIGIN/../lib' "$bin"; \
+	\
+	cd /; \
+	rm -rf /usr/src/python; \
+	\
+	find ${PREFIX} -depth \
+		\( \
+			\( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
+			-o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' -o -name 'libpython*.a' \) \) \
+		\) -exec rm -rf '{}' + \
+	; \
+	\
+	find ${PREFIX} -type f -executable -not \( -name '*tkinter*' \) -exec scanelf --needed --nobanner --format '%n#p' '{}' ';' \
 		| tr ',' '\n' \
 		| sort -u \
-		| awk 'system("[ -e ${PREFIX}/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-		| xargs -rt apk add --no-cache --virtual .python-rundeps \
-	&& apk del .build-deps \
+		| awk 'system("[ -e /${PREFI}/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+		| xargs -rt apk add --no-network --virtual .python-rundeps \
+	; \
+	apk del --no-network .build-deps; \
 	\
-	&& find ${PREFIX} -depth \
-		\( \
-			\( -type d -a \( -name test -o -name tests \) \) \
-			-o \
-			\( -type f -a \( -name '*.pyc' -o -name '*.pyo' \) \) \
-		\) -exec rm -rf '{}' + \
-	&& rm -rf /usr/src/python
+	python3 --version
 
-RUN python3 --version
+RUN ${PREFIX}/bin/python3 --version
 
 # make some useful symlinks that are expected to exist
 RUN cd ${PREFIX}/bin \
@@ -124,7 +141,7 @@ RUN set -ex; \
 	rm -f get-pip.py
 
 RUN mkdir -p ${PREFIX}/licenses \
-    && wget -O ${PREFIX}/licenses/LICENSE.cpython.txt "https://github.com/python/cpython/raw/3.8/LICENSE"
+    && wget -O ${PREFIX}/licenses/LICENSE.cpython.txt "https://github.com/python/cpython/raw/3.11/LICENSE"
 
 CMD ["python3"]
 

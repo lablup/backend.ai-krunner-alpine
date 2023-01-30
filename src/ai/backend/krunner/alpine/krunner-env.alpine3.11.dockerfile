@@ -1,6 +1,8 @@
+
 FROM lablup/backendai-krunner-python:alpine3.11
 
 ARG PREFIX=/opt/backend.ai
+ARG ARCH=x86_64
 
 # for installing source-distributed Python packages, we need build-base.
 # (we cannot just run manylinux wheels in Alpine due to musl-libc)
@@ -16,7 +18,7 @@ RUN PYVER_MM="$(echo $PYTHON_VERSION | cut -d. -f1).$(echo $PYTHON_VERSION | cut
     mkdir -p ${PREFIX}/lib/python${PYVER_MM}/site-packages/ai/backend/kernel && \
     mkdir -p ${PREFIX}/lib/python${PYVER_MM}/site-packages/ai/backend/helpers
 
-COPY ttyd_linux.x86_64.bin ${PREFIX}/bin/ttyd
+COPY ttyd_linux.${ARCH}.bin ${PREFIX}/bin/ttyd
 COPY licenses/* ${PREFIX}/licenses/wheels
 RUN chmod +x ${PREFIX}/bin/ttyd
 
@@ -24,7 +26,7 @@ RUN chmod +x ${PREFIX}/bin/ttyd
 RUN cd ${PREFIX}; \
     tar cJf /root/image.tar.xz ./*
 
-LABEL ai.backend.krunner.version=7
+LABEL ai.backend.krunner.version=8
 CMD ["${PREFIX}/bin/python"]
 
 # vim: ft=dockerfile
