@@ -1,38 +1,28 @@
-FROM alpine:3.11
+FROM alpine:3.17
 
 ARG PREFIX=/opt/backend.ai
 
 ENV PATH=${PREFIX}/bin:$PATH
 ENV LANG=C.UTF-8
+RUN mkdir -p ${PREFIX}
 
-RUN apk add --no-cache ca-certificates
+# runtime dependencies
+RUN set -eux; \
+	apk add --no-cache \
+		ca-certificates \
+		tzdata \
+	;
 
 ENV GPG_KEY A035C8C19219BA821ECEA86B64E628F8D684696D
 ENV PYTHON_VERSION 3.11.1
 
-RUN mkdir -p ${PREFIX}
-ENV LD_LIBRARY_PATH ${PREFIX}/lib
-
-RUN set -ex \
-	&& apk add --no-cache --virtual .fetch-deps \
+RUN set -eux; \
+	\
+	apk add --no-cache --virtual .build-deps \
 		gnupg \
 		tar \
 		xz \
-		ca-certificates \
-		tzdata \
-	\
-	&& wget -O python.tar.xz "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz" \
-	&& wget -O python.tar.xz.asc "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz.asc" \
-	&& export GNUPGHOME="$(mktemp -d)" \
-	&& gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$GPG_KEY" \
-	&& gpg --batch --verify python.tar.xz.asc python.tar.xz \
-	&& { command -v gpgconf > /dev/null && gpgconf --kill all || :; } \
-	&& rm -rf "$GNUPGHOME" python.tar.xz.asc \
-	&& mkdir -p /usr/src/python \
-	&& tar -xJC /usr/src/python --strip-components=1 -f python.tar.xz \
-	&& rm python.tar.xz \
-	\
-	&& apk add --no-cache --virtual .build-deps  \
+		\
 		bluez-dev \
 		bzip2-dev \
 		dpkg-dev dpkg \
@@ -58,13 +48,24 @@ RUN set -ex \
 		util-linux-dev \
 		xz-dev \
 		zlib-dev \
-# add build deps before removing fetch deps in case there's overlap
-	&& apk del .fetch-deps \
+	; \
 	\
-	&& cd /usr/src/python \
-	&& gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" \
+	wget -O python.tar.xz "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz"; \
+	wget -O python.tar.xz.asc "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz.asc"; \
+	GNUPGHOME="$(mktemp -d)"; export GNUPGHOME; \
+	gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$GPG_KEY"; \
+	gpg --batch --verify python.tar.xz.asc python.tar.xz; \
+	command -v gpgconf > /dev/null && gpgconf --kill all || :; \
+	rm -rf "$GNUPGHOME" python.tar.xz.asc; \
+	mkdir -p /usr/src/python; \
+	tar --extract --directory /usr/src/python --strip-components=1 --file python.tar.xz; \
+	rm python.tar.xz; \
+	\
+	cd /usr/src/python; \
+	gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
 	./configure \
 		--build="$gnuArch" \
+		--prefix="${PREFIX}" \
 		--enable-loadable-sqlite-extensions \
 		--enable-optimizations \
 		--enable-option-checking=fatal \
@@ -100,30 +101,31 @@ RUN set -ex \
 	find ${PREFIX} -type f -executable -not \( -name '*tkinter*' \) -exec scanelf --needed --nobanner --format '%n#p' '{}' ';' \
 		| tr ',' '\n' \
 		| sort -u \
-		| awk 'system("[ -e /${PREFI}/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+		| awk 'system("[ -e ${PREFIX}/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
 		| xargs -rt apk add --no-network --virtual .python-rundeps \
 	; \
 	apk del --no-network .build-deps; \
 	\
 	python3 --version
 
-RUN ${PREFIX}/bin/python3 --version
-
-# make some useful symlinks that are expected to exist
-RUN cd ${PREFIX}/bin \
-	&& ln -s idle3 idle \
-	&& ln -s pydoc3 pydoc \
-	&& ln -s python3 python \
-	&& ln -s python3-config python-config
+# make some useful symlinks that are expected to exist ("${PREFIX}/bin/python" and friends)
+RUN set -eux; \
+	for src in idle3 pydoc3 python3 python3-config; do \
+		dst="$(echo "$src" | tr -d 3)"; \
+		[ -s "${PREFIX}/bin/$src" ]; \
+		[ ! -e "${PREFIX}/bin/$dst" ]; \
+		ln -svT "$src" "${PREFIX}/bin/$dst"; \
+	done
 
 # if this is called "PIP_VERSION", pip explodes with "ValueError: invalid truth value '<VERSION>'"
 ENV PYTHON_PIP_VERSION 22.3.1
+# https://github.com/docker-library/python/issues/365
 ENV PYTHON_SETUPTOOLS_VERSION 65.5.1
 # https://github.com/pypa/get-pip
 ENV PYTHON_GET_PIP_URL https://github.com/pypa/get-pip/raw/66030fa03382b4914d4c4d0896961a0bdeeeb274/public/get-pip.py
 ENV PYTHON_GET_PIP_SHA256 1e501cf004eac1b7eb1f97266d28f995ae835d30250bec7f8850562703067dc6
 
-RUN set -ex; \
+RUN set -eux; \
 	\
 	wget -O get-pip.py "$PYTHON_GET_PIP_URL"; \
 	echo "$PYTHON_GET_PIP_SHA256 *get-pip.py" | sha256sum -c -; \
@@ -135,16 +137,12 @@ RUN set -ex; \
 		--no-cache-dir \
 		--no-compile \
 		"pip==$PYTHON_PIP_VERSION" \
-                "setuptools==${PYTHON_SETUPTOOLS_VERSION}"; \
+		"setuptools==$PYTHON_SETUPTOOLS_VERSION" \
 	; \
 	rm -f get-pip.py; \
 	\
 	pip --version
 
-RUN mkdir -p ${PREFIX}/licenses \
-    && wget -O ${PREFIX}/licenses/LICENSE.cpython.txt "https://github.com/python/cpython/raw/3.11/LICENSE"
-
 CMD ["python3"]
-
 
 # vim: ft=dockerfile

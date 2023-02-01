@@ -1,15 +1,15 @@
 ARG ARCH=x86_64
-FROM --platform=linux/${ARCH} lablup/backendai-krunner-wheels:alpine3.11 AS wheels
+FROM --platform=linux/${ARCH} lablup/backendai-krunner-wheels:musllinux_1_2 AS wheels
 
 ARG ARCH=x86_64
-FROM --platform=linux/${ARCH} lablup/backendai-krunner-python:alpine3.11
+FROM --platform=linux/${ARCH} lablup/backendai-krunner-python:musllinux_1_2
 
 ARG PREFIX=/opt/backend.ai
 ARG ARCH=x86_64
 
 # for installing source-distributed Python packages, we need build-base.
 # (we cannot just run manylinux-only wheels in Alpine due to musl-libc)
-RUN apk add --no-cache build-base xz linux-headers
+RUN apk add --no-cache build-base linux-headers
 RUN ${PREFIX}/bin/pip install --no-cache-dir -U pip setuptools
 
 COPY --from=wheels /root/wheels/* /root/wheels/
@@ -31,7 +31,7 @@ RUN chmod +x ${PREFIX}/bin/ttyd
 
 # Build the image archive
 RUN cd ${PREFIX}; \
-    tar cJf /root/image.tar.xz ./*
+    tar cf /root/image.tar ./*
 
 LABEL ai.backend.krunner.version=8
 CMD ["${PREFIX}/bin/python"]
