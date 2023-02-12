@@ -27,6 +27,7 @@ def main(distro, arch):
         subprocess.run([
             'docker', 'buildx', 'build',
             '--platform', f'linux/{arch}',
+            '--build-arg', f'ARCH={arch}',
             '-f', f'krunner-wheels.{distro}.dockerfile',
             '-t', f'lablup/backendai-krunner-wheels:{distro}',
             '.'
