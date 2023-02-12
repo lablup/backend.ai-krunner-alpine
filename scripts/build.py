@@ -44,19 +44,20 @@ def main(distro, arch):
     click.secho(f'Building krunner for {distro}', fg='yellow', bold=True)
     cid = secrets.token_hex(8)
     arch = platform.machine()  # docker builds the image for the current arch.
+    subprocess.run(['docker', 'images'])
     subprocess.run([
         'docker', 'buildx', 'build',
         '--platform', f'linux/{arch}',
         '--build-arg', f'ARCH={arch}',
         '-f', f'krunner-env.{distro}.dockerfile',
-        '-t', f'lablup/backendai-krunner-env.{distro}',
+        '-t', f'lablup/backendai-krunner-env:{distro}',
         '.'
     ], cwd=base_path, check=True)
     subprocess.run([
         'docker', 'create',
         '--platform', f'linux/{arch}',
         '--name', cid,
-        f'lablup/backendai-krunner-env.{distro}',
+        f'lablup/backendai-krunner-env:{distro}',
     ], cwd=base_path, check=True)
     try:
         subprocess.run([
@@ -65,7 +66,7 @@ def main(distro, arch):
             str(base_path / f'krunner-env.{distro}.{arch}.tar'),
         ], cwd=base_path, check=True)
         subprocess.run([
-            'xz',
+            'xz', '-f',
             str(base_path / f'krunner-env.{distro}.{arch}.tar'),
         ], cwd=base_path, check=True)
         proc = subprocess.run([
