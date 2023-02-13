@@ -1,11 +1,11 @@
 ARG ARCH=x86_64
 FROM --platform=linux/${ARCH} lablup/backendai-krunner-wheels:musllinux_1_2 AS wheels
 
-ARG ARCH=x86_64
+ARG ARCH
 FROM --platform=linux/${ARCH} lablup/backendai-krunner-python:musllinux_1_2
 
 ARG PREFIX=/opt/backend.ai
-ARG ARCH=x86_64
+ARG ARCH
 
 # for installing source-distributed Python packages, we need build-base.
 # (we cannot just run manylinux-only wheels in Alpine due to musl-libc)
