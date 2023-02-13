@@ -3,22 +3,11 @@ Backend.AI Kernel Runner Package for Alpine-based Kernels
 
 ## Development & Updating
 
-Please refer [the README of krunner-ubuntu package](https://github.com/lablup/backend.ai-krunner-ubuntu/blob/master/README.md).
+Please refer [the README of krunner-static-gnu package](https://github.com/lablup/backend.ai-krunner-static-gnu/blob/master/README.md).
 
 ## Making a minimal Alpine-based image compatibile with this krunner package
 
-Use Alpine 3.17 or later and install the following packages:
-
-```console
-sudo apk add \
-  openssl \
-  ca-certificates \
-  tzdata \
-  readline \
-  gdbm \
-  libffi \
-  ncurses
-```
+[Use Alpine 3.17 or later and install this list of packages.](https://github.com/lablup/backend.ai-krunner-alpine/blob/master/compat-test.Dockerfile)
 
 ## Notes
 
