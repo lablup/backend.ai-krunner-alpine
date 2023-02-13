@@ -9,52 +9,64 @@ import pkg_resources
 import click
 
 
-default_distro = 'alpine3.8'
+default_distro = 'musllinux_1_2'
+default_arch = platform.machine()
 
 
 @click.command()
 @click.argument('distro', default=default_distro)
-def main(distro):
+@click.option('--arch', default=default_arch)
+def main(distro, arch):
     '''
     Build the kernel runner environment containers and tar archives which provides the /opt/backend.ai
     volume to all other kernel contaienrs.
     '''
+    print(f"BUILD ({distro}, {arch}) (running on {default_arch})")
     base_path = Path(pkg_resources.resource_filename('ai.backend.krunner.alpine', '.'))
-    os.environ['DOCKER_BUILDKIT'] = '1'
     if (base_path / f'krunner-wheels.{distro}.dockerfile').exists():
         click.secho(f'Building Python wheels for krunner for {distro}', fg='yellow', bold=True)
         subprocess.run([
-            'docker', 'build',
+            'docker', 'buildx', 'build',
+            '--platform', f'linux/{arch}',
+            '--build-arg', f'ARCH={arch}',
             '-f', f'krunner-wheels.{distro}.dockerfile',
             '-t', f'lablup/backendai-krunner-wheels:{distro}',
             '.'
         ], cwd=base_path, check=True)
     click.secho(f'Bundling Python for krunner for {distro}', fg='yellow', bold=True)
     subprocess.run([
-        'docker', 'build',
+        'docker', 'buildx', 'build',
+        '--platform', f'linux/{arch}',
+        '--build-arg', f'ARCH={arch}',
         '-f', f'krunner-python.{distro}.dockerfile',
         '-t', f'lablup/backendai-krunner-python:{distro}',
         '.'
     ], cwd=base_path, check=True)
     click.secho(f'Building krunner for {distro}', fg='yellow', bold=True)
     cid = secrets.token_hex(8)
-    arch = platform.machine()  # docker builds the image for the current arch.
     subprocess.run([
-        'docker', 'build',
+        'docker', 'buildx', 'build',
+        '--platform', f'linux/{arch}',
+        '--build-arg', f'ARCH={arch}',
         '-f', f'krunner-env.{distro}.dockerfile',
-        '-t', f'krunner-env.{distro}',
+        '-t', f'lablup/backendai-krunner-env:{distro}',
         '.'
     ], cwd=base_path, check=True)
     subprocess.run([
         'docker', 'create',
+        '--platform', f'linux/{arch}',
         '--name', cid,
-        f'krunner-env.{distro}',
+        f'lablup/backendai-krunner-env:{distro}',
     ], cwd=base_path, check=True)
     try:
         subprocess.run([
             'docker', 'cp',
-            f'{cid}:/root/image.tar.xz',
-            str(base_path / f'krunner-env.{distro}.{arch}.tar.xz'),
+            f'{cid}:/root/image.tar',
+            str(base_path / f'krunner-env.{distro}.{arch}.tar'),
+        ], cwd=base_path, check=True)
+        subprocess.run([
+            'xz', '-f',
+            str(base_path / f'krunner-env.{distro}.{arch}.tar'),
         ], cwd=base_path, check=True)
         proc = subprocess.run([
             'docker', 'inspect', cid,
