@@ -2,9 +2,9 @@
 
 tempdir="$(pwd)/$(mktemp -d krunner-test.XXXXX)"
 echo "Extracting the tarball into $tempdir ..."
-tar xJf src/ai/backend/krunner/alpine/krunner-env.musllinux_1_2.aarch64.tar.xz -C $tempdir
+tar xJf src/ai/backend/krunner/alpine/krunner-env.musllinux_1_2.$(uname -m).tar.xz -C $tempdir
 
-testimg="lablup/backendai-krunner-test:latest"
+testimg="lablup/backendai-krunner-test:musllinux-latest"
 echo "Building a minimal Alpine-based image to run the krunner ($testimg) ..."
 docker build -t $testimg -f compat-test.Dockerfile .
 
