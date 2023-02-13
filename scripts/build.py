@@ -21,12 +21,19 @@ def main(distro, arch):
     Build the kernel runner environment containers and tar archives which provides the /opt/backend.ai
     volume to all other kernel contaienrs.
     '''
+    print(f"BUILD ({distro}, {arch}) (running on {default_arch})")
+    docker_arch: str
+    match arch:
+        case "aarch64":
+            docker_arch = "arm64"
+        case _:
+            docker_arch = arch
     base_path = Path(pkg_resources.resource_filename('ai.backend.krunner.alpine', '.'))
     if (base_path / f'krunner-wheels.{distro}.dockerfile').exists():
         click.secho(f'Building Python wheels for krunner for {distro}', fg='yellow', bold=True)
         subprocess.run([
             'docker', 'buildx', 'build',
-            '--platform', f'linux/{arch}',
+            '--platform', f'linux/{docker_arch}',
             '--build-arg', f'ARCH={arch}',
             '-f', f'krunner-wheels.{distro}.dockerfile',
             '-t', f'lablup/backendai-krunner-wheels:{distro}',
@@ -35,7 +42,7 @@ def main(distro, arch):
     click.secho(f'Bundling Python for krunner for {distro}', fg='yellow', bold=True)
     subprocess.run([
         'docker', 'buildx', 'build',
-        '--platform', f'linux/{arch}',
+        '--platform', f'linux/{docker_arch}',
         '--build-arg', f'ARCH={arch}',
         '-f', f'krunner-python.{distro}.dockerfile',
         '-t', f'lablup/backendai-krunner-python:{distro}',
@@ -46,7 +53,7 @@ def main(distro, arch):
     arch = platform.machine()  # docker builds the image for the current arch.
     subprocess.run([
         'docker', 'buildx', 'build',
-        '--platform', f'linux/{arch}',
+        '--platform', f'linux/{docker_arch}',
         '--build-arg', f'ARCH={arch}',
         '-f', f'krunner-env.{distro}.dockerfile',
         '-t', f'lablup/backendai-krunner-env:{distro}',
@@ -54,7 +61,7 @@ def main(distro, arch):
     ], cwd=base_path, check=True)
     subprocess.run([
         'docker', 'create',
-        '--platform', f'linux/{arch}',
+        '--platform', f'linux/{docker_arch}',
         '--name', cid,
         f'lablup/backendai-krunner-env:{distro}',
     ], cwd=base_path, check=True)
