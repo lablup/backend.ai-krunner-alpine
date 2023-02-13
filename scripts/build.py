@@ -44,7 +44,6 @@ def main(distro, arch):
     click.secho(f'Building krunner for {distro}', fg='yellow', bold=True)
     cid = secrets.token_hex(8)
     arch = platform.machine()  # docker builds the image for the current arch.
-    subprocess.run(['docker', 'images'])
     subprocess.run([
         'docker', 'buildx', 'build',
         '--platform', f'linux/{arch}',
