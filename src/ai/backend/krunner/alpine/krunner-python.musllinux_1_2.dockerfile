@@ -1,9 +1,9 @@
-FROM python:3.11.2-alpine
+FROM python:3.12.2-alpine
 ARG PREFIX=/opt/backend.ai
 
 ENV PATH=${PREFIX}/bin:$PATH
 ENV LANG=C.UTF-8
-ENV PYTHON_VERSION 3.11.2
+ENV PYTHON_VERSION 3.12.2
 
 RUN mkdir -p ${PREFIX}; \
     mv /usr/local/* ${PREFIX}; \
