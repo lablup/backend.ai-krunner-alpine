@@ -4,8 +4,8 @@ global-exclude *.tar
 global-exclude *.tar.xz
 
 include src/ai/backend/krunner/alpine/__init__.py
-include src/ai/backend/krunner/alpine/krunner-env.static-gnu.ARCH.tar.xz
+include src/ai/backend/krunner/alpine/krunner-env.alpine.ARCH.tar.xz
 include src/ai/backend/krunner/alpine/ttyd_linux.ARCH.bin
 include src/ai/backend/krunner/alpine/versions.txt
-include src/ai/backend/krunner/alpine/krunner-python.static-gnu.txt
-include src/ai/backend/krunner/alpine/krunner-version.static-gnu.txt
+include src/ai/backend/krunner/alpine/krunner-python.alpine.txt
+include src/ai/backend/krunner/alpine/krunner-version.alpine.txt
