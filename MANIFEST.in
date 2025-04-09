@@ -1,1 +1,11 @@
-include src/ai/backend/krunner/alpine/*
+global-exclude *.dockerfile
+global-exclude *.bin
+global-exclude *.tar
+global-exclude *.tar.xz
+
+include src/ai/backend/krunner/alpine/__init__.py
+include src/ai/backend/krunner/alpine/krunner-env.musllinux_1_2.ARCH.tar.xz
+include src/ai/backend/krunner/alpine/ttyd_linux.ARCH.bin
+include src/ai/backend/krunner/alpine/versions.txt
+include src/ai/backend/krunner/alpine/krunner-python.musllinux_1_2.txt
+include src/ai/backend/krunner/alpine/krunner-version.musllinux_1_2.txt
