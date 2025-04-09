@@ -1,5 +1,4 @@
 import json
-import os
 import secrets
 import subprocess
 from pathlib import Path
@@ -21,7 +20,6 @@ def main(distro, arch):
     Build the kernel runner environment containers and tar archives which provides the /opt/backend.ai
     volume to all other kernel contaienrs.
     '''
-    print(f"BUILD ({distro}, {arch}) (running on {default_arch})")
     base_path = Path(pkg_resources.resource_filename('ai.backend.krunner.alpine', '.'))
     if (base_path / f'krunner-wheels.{distro}.dockerfile').exists():
         click.secho(f'Building Python wheels for krunner for {distro}', fg='yellow', bold=True)
