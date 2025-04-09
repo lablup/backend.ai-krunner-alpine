@@ -74,7 +74,7 @@ jobs:
       run: |
         PKGVER=$(uv run python -c 'from importlib.metadata import version;print(version("backend.ai-krunner-alpine"), end="")')
         GLIBC_PTAG=manylinux2014_${{ matrix.platform.arch }}  # to allow installing the krunner wheel when running Backend.AI on manylinux
-        MUSL_PTAG=musllinux_1_1_${{ matrix.platform.arch }}   # to allow installing the krunner wheel when running Backend.AI on musllinux
+        MUSL_PTAG=musllinux_1_2_${{ matrix.platform.arch }}   # to allow installing the krunner wheel when running Backend.AI on musllinux
         case "${{ matrix.platform.arch }}" in                 # to allow installing the krunner wheel when running Backend.AI on macOS
         "aarch64")
           MACOS_PTAG=macosx_11_0_arm64 ;;
